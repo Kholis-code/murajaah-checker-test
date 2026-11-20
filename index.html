@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muraja'ah Checker — Test Page (p.1 and p.604)</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1d2a26;--mute:#66736e;--line:#d9e0dc;--bg:#f6f4ee;--card:#fffdf8;--accent:#0f6b55;
+        --ok:#147a4b;--okbg:#e3f3ea;--bad:#b3261e;--badbg:#fbe4e1;--skip:#7a7f85;--skipbg:#e8eaec;--opt:#a8871c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:720px;margin:0 auto;padding:16px}
+  h1{font-size:1.25rem;margin:.2rem 0}
+  h2{font-size:1rem;margin:0 0 .5rem;color:var(--accent)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+  .shukr{text-align:center;border-color:#cfdcd4}
+  .shukr .ar{font-family:"Amiri Quran",serif;font-size:1.35rem;direction:rtl;line-height:2}
+  .small{font-size:.85rem;color:var(--mute)}
+  button,select,input[type=text],input[type=number]{font:inherit;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+  button{cursor:pointer;min-height:44px}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.rec{background:var(--bad);color:#fff;border-color:var(--bad)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .row>*{flex:0 0 auto}
+  input[type=text]{flex:1 1 220px;min-width:0}
+  progress{width:100%;height:10px}
+  #mushaf{direction:rtl;text-align:center;font-family:"Amiri Quran","Scheherazade New","Traditional Arabic",serif;font-size:1.7rem;line-height:2.5}
+  .surah{display:block;font-size:1rem;color:var(--mute);font-family:system-ui,sans-serif;margin-top:.4rem;border-top:1px dashed var(--line);padding-top:.3rem}
+  .w{padding:2px 4px;border-radius:6px;cursor:default;display:inline-block}
+  .w.tap{cursor:pointer}
+  .hidden .w{color:transparent;background:#e9e5da;margin:2px}
+  .hidden .w.done{color:inherit}
+  .w.ok{background:var(--okbg);color:var(--ok)}
+  .w.bad{background:var(--badbg);color:var(--bad)}
+  .w.skip{background:var(--skipbg);color:var(--skip);text-decoration:line-through}
+  .w.optskip{color:var(--opt);opacity:.7}
+  .end{color:var(--accent);font-size:1rem;margin:0 4px}
+  .legend span{display:inline-block;padding:1px 8px;border-radius:6px;margin:2px 4px 2px 0;font-size:.85rem}
+  #detail{min-height:2.2em}
+  .ar-inline{font-family:"Amiri Quran",serif;direction:rtl;unicode-bidi:isolate;font-size:1.2rem}
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th,td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+  .score{font-size:1.6rem;font-weight:700}
+  audio{width:100%;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+  <div class="card shukr">
+    <div class="ar">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَالَمِينَ</div>
+    <div class="small">All praise is for Allah. O Allah, benefit me with what You have taught me, and teach me what benefits me. (Ibn Majah 251)</div>
+  </div>
+
+  <h1>Muraja'ah Checker — test page</h1>
+  <p class="small">Go/no-go test of the free Qur'an speech model on the first page (Al-Fatihah) and last page (Al-Ikhlas, Al-Falaq, An-Nas). Audio stays on this device. Word-level check only: it does not judge tajweed or harakat.</p>
+
+  <div class="card">
+    <h2>1 · Load the model (once, ~100–200 MB)</h2>
+    <div class="row">
+      <input type="text" id="modelId" value="iqbalaesthetic/Basira" aria-label="Model id">
+      <select id="variant" aria-label="Download size">
+        <option value="auto">Auto (fastest checking, ~160–200 MB)</option>
+        <option value="small">Smaller download (~100 MB, slower checking)</option>
+      </select>
+      <button class="primary" id="loadBtn">Load model</button>
+    </div>
+    <div class="small" id="cacheNote"></div>
+    <progress id="prog" value="0" max="100" hidden></progress>
+    <div class="small" id="modelStatus">Not loaded.</div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Choose page and recite</h2>
+    <div class="row">
+      <select id="pageSel" aria-label="Page">
+        <option value="1">Page 1 — Al-Fatihah</option>
+        <option value="604">Page 604 — Al-Ikhlas · Al-Falaq · An-Nas</option>
+      </select>
+      <label class="small"><input type="checkbox" id="hideChk" checked> Hide text (recite from memory)</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="recBtn" class="rec">● Record</button>
+      <label class="small">or upload audio: <input type="file" id="fileIn" accept="audio/*,video/*"></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="small">Mistakes planted on purpose: <input type="number" id="planted" min="0" value="0" style="width:80px"></label>
+      <button class="primary" id="checkBtn" disabled>Check recitation</button>
+    </div>
+    <div class="small" id="recStatus">No audio yet.</div>
+    <audio id="player" controls hidden></audio>
+  </div>
+
+  <div class="card">
+    <h2>3 · Result</h2>
+    <div class="row"><span class="score" id="score">—</span><span class="small" id="scoreNote"></span></div>
+    <div class="legend">
+      <span style="background:var(--okbg);color:var(--ok)">correct</span>
+      <span style="background:var(--badbg);color:var(--bad)">different word heard</span>
+      <span style="background:var(--skipbg);color:var(--skip)">skipped</span>
+    </div>
+    <div id="mushaf" class="hidden"></div>
+    <div id="detail" class="small">Tap a coloured word to hear that moment.</div>
+    <div class="small" id="extra"></div>
+    <details><summary class="small">Raw transcript from the model</summary><div id="raw" class="ar-inline"></div></details>
+  </div>
+
+  <div class="card">
+    <h2>4 · Test log (this device only)</h2>
+    <div style="overflow-x:auto"><table id="logTbl"><thead><tr><th>When</th><th>Page</th><th>Score</th><th>Wrong</th><th>Skipped</th><th>Extra</th><th>Planted</th></tr></thead><tbody></tbody></table></div>
+    <div class="row" style="margin-top:8px"><button id="copyLog">Copy log</button><button id="clearLog">Clear log</button><span class="small" id="logMsg"></span></div>
+    <p class="small">Go/no-go rule: with planted mistakes, "Wrong + Skipped" should be close to "Planted". With a clean recitation, both should be near zero.</p>
+  </div>
+
+  <div class="card shukr">
+    <div class="small">Close with: Subhanakallahumma wa bihamdik, ash-hadu an la ilaha illa ant, astaghfiruka wa atubu ilayk. (Abu Dawud 4859)</div>
+  </div>
+</main>
+
+<script>
+/*CORE-START*/
+const PAGES = {
+  1: [
+    {surah:"Al-Fatihah", ayahs:[
+      ["1","بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"],
+      ["2","الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ"],
+      ["3","الرَّحْمَٰنِ الرَّحِيمِ"],
+      ["4","مَالِكِ يَوْمِ الدِّينِ"],
+      ["5","إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ"],
+      ["6","اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ"],
+      ["7","صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ"]
+    ]}
+  ],
+  604: [
+    {surah:"Al-Ikhlas", basmalah:true, ayahs:[
+      ["1","قُلْ هُوَ اللَّهُ أَحَدٌ"],
+      ["2","اللَّهُ الصَّمَدُ"],
+      ["3","لَمْ يَلِدْ وَلَمْ يُولَدْ"],
+      ["4","وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ"]
+    ]},
+    {surah:"Al-Falaq", basmalah:true, ayahs:[
+      ["1","قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ"],
+      ["2","مِنْ شَرِّ مَا خَلَقَ"],
+      ["3","وَمِنْ شَرِّ غَاسِقٍ إِذَا وَقَبَ"],
+      ["4","وَمِنْ شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ"],
+      ["5","وَمِنْ شَرِّ حَاسِدٍ إِذَا حَسَدَ"]
+    ]},
+    {surah:"An-Nas", basmalah:true, ayahs:[
+      ["1","قُلْ أَعُوذُ بِرَبِّ النَّاسِ"],
+      ["2","مَلِكِ النَّاسِ"],
+      ["3","إِلَٰهِ النَّاسِ"],
+      ["4","مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ"],
+      ["5","الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ"],
+      ["6","مِنَ الْجِنَّةِ وَالنَّاسِ"]
+    ]}
+  ]
+};
+const BASMALAH = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
+const ISTIADHA = "اعوذ بالله من الشيطان الرجيم";
+
+// Reduce a word to a comparison skeleton: no harakat, unified letter forms,
+// and no medial alif (so imla'i "العالمين" equals Uthmani "العلمين").
+function skel(w){
+  let s = w.replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g,"")
+           .replace(/[ٱأإآ]/g,"ا")
+           .replace(/ى/g,"ي").replace(/ة/g,"ه")
+           .replace(/ؤ/g,"و").replace(/ئ/g,"ي")
+           .replace(/ء/g,"")
+           .replace(/[^ء-ي]/g,"");
+  if(!s) return "";
+  return s[0] + s.slice(1).replace(/ا/g,"");
+}
+function words(text){ return text.split(/\s+/).filter(x=>skel(x)); }
+
+// Flat list of expected words for a page.
+function expectedFor(page){
+  const out=[];
+  PAGES[page].forEach((s,si)=>{
+    if(s.basmalah) words(BASMALAH).forEach(w=>out.push({w,k:skel(w),si,ayah:"0",opt:true}));
+    s.ayahs.forEach(([n,t])=>{ const ws=words(t); ws.forEach((w,i)=>out.push({w,k:skel(w),si,ayah:n,opt:false,last:i===ws.length-1})); });
+  });
+  return out;
+}
+// heard: [{w,t}] -> drop a leading isti'adha if present.
+function stripIstiadha(heard){
+  const ist=words(ISTIADHA).map(skel); let hit=0;
+  for(let i=0;i<ist.length && i<heard.length;i++) if(skel(heard[i].w)===ist[i]) hit++;
+  return hit>=4 ? heard.slice(ist.length) : heard;
+}
+// Word-level edit-distance alignment. Returns per-expected status + extras.
+function align(exp, heard){
+  const n=exp.length, m=heard.length, hk=heard.map(h=>skel(h.w));
+  const D=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let i=1;i<=n;i++) D[i][0]=D[i-1][0]+(exp[i-1].opt?0.1:1);
+  for(let j=1;j<=m;j++) D[0][j]=j;
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++){
+    const sub=D[i-1][j-1]+(exp[i-1].k===hk[j-1]?0:1);
+    const del=D[i-1][j]+(exp[i-1].opt?0.1:1);
+    const ins=D[i][j-1]+1;
+    D[i][j]=Math.min(sub,del,ins);
+  }
+  const res=exp.map(e=>({...e,status:"skip",heard:null,t:null})), extras=[];
+  let i=n,j=m;
+  while(i>0||j>0){
+    if(i>0&&j>0){
+      const c=exp[i-1].k===hk[j-1]?0:1;
+      if(Math.abs(D[i][j]-(D[i-1][j-1]+c))<1e-9){
+        res[i-1].status=c?"bad":"ok"; res[i-1].heard=heard[j-1].w; res[i-1].t=heard[j-1].t; i--;j--; continue;
+      }
+    }
+    if(i>0 && Math.abs(D[i][j]-(D[i-1][j]+(exp[i-1].opt?0.1:1)))<1e-9){ res[i-1].status=exp[i-1].opt?"optskip":"skip"; i--; continue; }
+    extras.unshift(heard[j-1]); j--;
+  }
+  let lastT=0; res.forEach(r=>{ if(r.t==null) r.t=lastT; else lastT=r.t; });
+  const req=res.filter(r=>!r.opt);
+  const ok=req.filter(r=>r.status==="ok").length;
+  return {res, extras,
+    stats:{total:req.length, ok, wrong:res.filter(r=>r.status==="bad").length,
+           skipped:req.filter(r=>r.status==="skip").length, extra:extras.length,
+           pct:req.length?Math.round(100*ok/req.length):0}};
+}
+function check(page, heard){ return align(expectedFor(page), stripIstiadha(heard)); }
+/*CORE-END*/
+</script>
+
+<script>
+const $=id=>document.getElementById(id);
+let asr=null, samples=null, lastResult=null, mediaRec=null, chunks=[];
+
+function renderPage(result){
+  const page=+$("pageSel").value, box=$("mushaf"); box.innerHTML="";
+  const list=result?result.res:expectedFor(page).map(e=>({...e,status:null}));
+  let curS=-1;
+  list.forEach(r=>{
+    if(r.si!==curS){ curS=r.si; const h=document.createElement("span"); h.className="surah"; h.textContent=PAGES[page][r.si].surah; box.appendChild(h); }
+    const s=document.createElement("span"); s.className="w"; s.textContent=r.w;
+    if(r.status){ s.classList.add("done",r.status,"tap"); s.onclick=()=>showDetail(r); }
+    box.appendChild(s); box.appendChild(document.createTextNode(" "));
+    if(r.last){ const e=document.createElement("span"); e.className="end"; e.textContent="﴿"+r.ayah+"﴾"; box.appendChild(e); }
+    if(r.opt && r.ayah==="0" && list[list.indexOf(r)+1] && !list[list.indexOf(r)+1].opt) box.appendChild(document.createElement("br"));
+  });
+  box.classList.toggle("hidden", $("hideChk").checked && !result);
+}
+function fmt(t){ const m=Math.floor(t/60), s=Math.floor(t%60); return m+":"+String(s).padStart(2,"0"); }
+function showDetail(r){
+  const d=$("detail"); d.innerHTML="";
+  const label={ok:"Correct",bad:"Different word heard",skip:"Skipped",optskip:"Basmalah not recited (not counted)"}[r.status];
+  d.append(label+" · expected ");
+  const a=document.createElement("span"); a.className="ar-inline"; a.textContent=r.w; d.append(a);
+  if(r.status==="bad"){ d.append(" · heard "); const b=document.createElement("span"); b.className="ar-inline"; b.textContent=r.heard; d.append(b); }
+  d.append(" · around "+fmt(r.t));
+  const p=$("player"); if(!p.hidden){ try{ p.currentTime=Math.max(0,r.t-1); p.play().catch(()=>{}); }catch(e){} }
+}
+
+async function loadModel(){
+  $("loadBtn").disabled=true; $("prog").hidden=false; $("modelStatus").textContent="Loading library…";
+  try{
+    const tf=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3");
+    let device="wasm", dtype="q8";
+    if($("variant").value==="auto" && navigator.gpu){ try{ const ad=await navigator.gpu.requestAdapter(); if(ad){ device="webgpu"; dtype=ad.features.has("shader-f16")?"fp16":"q4"; } }catch(e){} }
+    const make=(dev,dt)=>tf.pipeline("automatic-speech-recognition",$("modelId").value.trim(),{device:dev,dtype:dt,
+      progress_callback:p=>{ if(p.status==="progress"&&p.total){ $("prog").value=100*p.loaded/p.total; $("modelStatus").textContent="Downloading "+p.file+" "+Math.round(100*p.loaded/p.total)+"%"; } }});
+    try{ asr=await make(device,dtype); }
+    catch(e){ if(device==="webgpu"){ device="wasm"; dtype="q8"; $("modelStatus").textContent="WebGPU failed, retrying on WASM…"; asr=await make(device,dtype); } else throw e; }
+    $("modelStatus").textContent="Model ready ("+device+", "+dtype+").";
+    $("prog").hidden=true; $("checkBtn").disabled=!samples;
+  }catch(e){ $("modelStatus").textContent="Could not load: "+e.message+" — check the connection and model id, then try again."; $("loadBtn").disabled=false; $("prog").hidden=true; }
+}
+
+async function setAudio(blob){
+  $("recStatus").textContent="Decoding audio…";
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext, ctx=new AC({sampleRate:16000});
+    const buf=await ctx.decodeAudioData(await blob.arrayBuffer());
+    const out=new Float32Array(buf.length);
+    for(let c=0;c<buf.numberOfChannels;c++){ const d=buf.getChannelData(c); for(let i=0;i<d.length;i++) out[i]+=d[i]/buf.numberOfChannels; }
+    samples=out; ctx.close();
+    const p=$("player"); p.src=URL.createObjectURL(blob); p.hidden=false;
+    $("recStatus").textContent="Audio ready: "+fmt(buf.duration)+".";
+    $("checkBtn").disabled=!asr;
+  }catch(e){ samples=null; $("recStatus").textContent="Could not read that audio: "+e.message; }
+}
+
+async function toggleRec(){
+  const b=$("recBtn");
+  if(mediaRec&&mediaRec.state==="recording"){ mediaRec.stop(); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    chunks=[]; mediaRec=new MediaRecorder(stream);
+    mediaRec.ondataavailable=e=>chunks.push(e.data);
+    mediaRec.onstop=()=>{ stream.getTracks().forEach(t=>t.stop()); b.textContent="● Record"; setAudio(new Blob(chunks,{type:mediaRec.mimeType})); };
+    mediaRec.start(); b.textContent="■ Stop"; $("recStatus").textContent="Recording… recite, then press Stop.";
+    lastResult=null; renderPage(null);
+  }catch(e){ $("recStatus").textContent="Microphone not available here ("+e.message+"). Record with the phone's voice recorder and upload the file instead."; }
+}
+
+async function runCheck(){
+  $("checkBtn").disabled=true; $("recStatus").textContent="Transcribing… this can take a while on a phone.";
+  await new Promise(r=>setTimeout(r,50));
+  try{
+    let out;
+    const opt={return_timestamps:true,chunk_length_s:30,stride_length_s:5};
+    try{ out=await asr(samples,{...opt,language:"arabic",task:"transcribe"}); }
+    catch(e){ out=await asr(samples,opt); }
+    const heard=[];
+    const segs=(out.chunks&&out.chunks.length)?out.chunks:[{text:out.text,timestamp:[0,0]}];
+    segs.forEach(c=>words(c.text||"").forEach(w=>heard.push({w,t:(c.timestamp&&c.timestamp[0])||0})));
+    $("raw").textContent=out.text||"";
+    const page=+$("pageSel").value;
+    lastResult=check(page,heard); renderPage(lastResult);
+    const s=lastResult.stats;
+    $("score").textContent=s.pct+"%";
+    $("scoreNote").textContent=s.ok+" of "+s.total+" words · "+s.wrong+" wrong · "+s.skipped+" skipped · "+s.extra+" extra";
+    const ex=$("extra"); ex.textContent="";
+    if(lastResult.extras.length){ ex.append("Extra words heard: "); const a=document.createElement("span"); a.className="ar-inline"; a.textContent=lastResult.extras.map(x=>x.w).join(" "); ex.append(a); }
+    addLog({when:new Date().toLocaleString(),page,pct:s.pct,wrong:s.wrong,skipped:s.skipped,extra:s.extra,planted:+$("planted").value||0});
+    $("recStatus").textContent="Done.";
+  }catch(e){ $("recStatus").textContent="Transcription failed: "+e.message; }
+  $("checkBtn").disabled=false;
+}
+
+let log=[];
+try{ log=JSON.parse(localStorage.getItem("murajaahTestLog")||"[]"); }catch(e){}
+function saveLog(){ try{ localStorage.setItem("murajaahTestLog",JSON.stringify(log)); }catch(e){} }
+function drawLog(){
+  const tb=$("logTbl").querySelector("tbody"); tb.innerHTML="";
+  log.forEach(r=>{ const tr=document.createElement("tr"); [r.when,r.page,r.pct+"%",r.wrong,r.skipped,r.extra,r.planted].forEach(v=>{ const td=document.createElement("td"); td.textContent=v; tr.appendChild(td); }); tb.appendChild(tr); });
+}
+function addLog(r){ log.push(r); saveLog(); drawLog(); }
+
+$("loadBtn").onclick=loadModel;
+$("recBtn").onclick=toggleRec;
+$("fileIn").onchange=e=>{ if(e.target.files[0]) setAudio(e.target.files[0]); };
+$("checkBtn").onclick=runCheck;
+$("pageSel").onchange=()=>{ lastResult=null; $("score").textContent="—"; $("scoreNote").textContent=""; $("extra").textContent=""; renderPage(null); };
+$("hideChk").onchange=()=>renderPage(lastResult);
+$("copyLog").onclick=async()=>{ const txt="When\tPage\tScore\tWrong\tSkipped\tExtra\tPlanted\n"+log.map(r=>[r.when,r.page,r.pct+"%",r.wrong,r.skipped,r.extra,r.planted].join("\t")).join("\n"); try{ await navigator.clipboard.writeText(txt); $("logMsg").textContent="Copied."; }catch(e){ $("logMsg").textContent="Copy not allowed here."; } };
+$("clearLog").onclick=()=>{ log=[]; saveLog(); drawLog(); };
+(async()=>{ let ok=false; try{ if(window.isSecureContext && "caches" in window){ await caches.open("probe"); ok=true; } }catch(e){}
+  $("cacheNote").textContent = ok ? "Model storage: available. After one complete download, reloads use the saved copy."
+    : "Model storage: NOT available on this address. Every reload downloads the whole model again. Open this page from an https:// address (or http://localhost) to keep it."; })();
+renderPage(null); drawLog();
+</script>
+</body>
+</html>
